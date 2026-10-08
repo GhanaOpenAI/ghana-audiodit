@@ -100,8 +100,9 @@ uvicorn ghana_audiodit.server:app --host 0.0.0.0 --port 8210
 ```
 
 `OMNIASR_SHERPA_REPO` is optional: with it, reference audio uploaded without a transcript is
-transcribed automatically. For a long-running service use `server/run_supervised.sh` (restarts on
-failure) and `server/run_tunnel.sh` (Cloudflare tunnel for an HTTPS address).
+transcribed automatically. For a long-running service, `server/systemd/` has example units that start the API and a
+Cloudflare tunnel on boot and restart them on failure; `server/run_supervised.sh` and
+`server/run_tunnel.sh` do the same without systemd.
 
 **Modal (serverless GPU)**
 

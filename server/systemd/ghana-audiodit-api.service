@@ -1,0 +1,21 @@
+# Example unit for the ghana-audiodit API (edit User, paths and model, then:
+#   sudo cp ghana-audiodit-*.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo systemctl enable --now ghana-audiodit-api ghana-audiodit-tunnel)
+[Unit]
+Description=ghana-audiodit TTS inference API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/ghana-audiodit
+Environment=GHANA_AUDIODIT_MODEL=ghanaopenai/ghana-audiodit
+Environment=GHANA_AUDIODIT_DTYPE=bfloat16
+Environment=OMNIASR_SHERPA_REPO=csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-2025-11-12
+Environment=HF_HOME=/opt/ghana-audiodit/hf
+ExecStart=/opt/ghana-audiodit/.venv/bin/python -m uvicorn ghana_audiodit.server:app --host 127.0.0.1 --port 8210 --timeout-keep-alive 75
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

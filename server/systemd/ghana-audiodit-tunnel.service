@@ -1,0 +1,14 @@
+# Example unit: Cloudflare named tunnel in front of the API (see run_tunnel.sh for the config format)
+[Unit]
+Description=ghana-audiodit Cloudflare tunnel
+After=network-online.target ghana-audiodit-api.service
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --config /opt/ghana-audiodit/cloudflared.yml run
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
