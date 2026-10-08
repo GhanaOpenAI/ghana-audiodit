@@ -88,15 +88,16 @@ The API (FastAPI) is the one behind the demo. This is a diffusion model, so it i
 PyTorch, not an LLM server such as vLLM.
 
 **Docker (recommended)** — the image contains the model and the exact tested dependency versions,
-so it runs offline on any machine with an NVIDIA GPU (≥ 6 GB) and the NVIDIA container toolkit:
+so it runs offline on any machine with an NVIDIA GPU (≥ 6 GB) and the NVIDIA container toolkit
+(10.1 GB download):
 
 ```bash
 docker run --gpus all -p 8000:8000 ghcr.io/ghanaopenai/ghana-audiodit:latest
 curl -X POST localhost:8000/synthesize -F "text=Akwaaba! Wo ho te sɛn?" -F language=Asante_Twi_twi -o out.wav
 ```
 
-`ghcr.io/ghanaopenai/ghana-audiodit:slim` leaves the model out and downloads it on first start
-(mount a volume at `/models` to keep it). Build either yourself with `docker build .`
+`ghcr.io/ghanaopenai/ghana-audiodit:slim` (4.6 GB download) leaves the model out and downloads it
+on first start (mount a volume at `/models` to keep it). Build either yourself with `docker build .`
 (`--build-arg BAKE_MODEL=0` for slim). The same image works on Modal, RunPod, Kubernetes and the like;
 `deploy/modal_app.py` is an optional Modal example.
 
