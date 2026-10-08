@@ -1,4 +1,5 @@
-# ghana-audiodit inference API — runs on any machine with an NVIDIA GPU (≥ 6 GB), an NVIDIA driver
+# ghana-audiodit inference API. Model weights in this image: CC-BY-NC-4.0 (see LICENSE-MODEL);
+# code: MIT. Runs on any machine with an NVIDIA GPU (≥ 6 GB), an NVIDIA driver
 # supporting CUDA 12.8, and the NVIDIA container toolkit.
 #
 #   docker run --gpus all -p 8000:8000 ghcr.io/ghanaopenai/ghana-audiodit:latest
@@ -14,7 +15,7 @@
 FROM ubuntu:24.04
 LABEL org.opencontainers.image.source="https://github.com/GhanaOpenAI/ghana-audiodit" \
       org.opencontainers.image.description="Text-to-speech for 43 Ghanaian languages (ghanaopenai/ghana-audiodit), inference API" \
-      org.opencontainers.image.licenses="MIT AND CC-BY-NC-4.0"
+      org.opencontainers.image.licenses="CC-BY-NC-4.0"
 
 ENV DEBIAN_FRONTEND=noninteractive PIP_NO_CACHE_DIR=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv ffmpeg libsndfile1 ca-certificates \
@@ -24,7 +25,7 @@ WORKDIR /app
 RUN pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
 COPY docker/requirements.lock /app/docker/requirements.lock
 RUN pip install -r docker/requirements.lock
-COPY pyproject.toml README.md LICENSE LICENSE-longcat-audiodit /app/
+COPY pyproject.toml README.md LICENSE LICENSE-longcat-audiodit LICENSE-MODEL /app/
 COPY ghana_audiodit /app/ghana_audiodit
 RUN pip install --no-deps . && python -c "import ghana_audiodit, ghana_audiodit.text, ghana_audiodit.server"
 

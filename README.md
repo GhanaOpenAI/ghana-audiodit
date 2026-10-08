@@ -131,6 +131,7 @@ LoRA rank 64 plus full training of the small layers, 85 % of examples without a 
 ## License
 
 Code: MIT (`LICENSE`); `ghana_audiodit/audiodit/` is from LongCat-AudioDiT, MIT
-(`LICENSE-longcat-audiodit`). Model weights: CC-BY-NC-4.0, following the training data.
+(`LICENSE-longcat-audiodit`). **Model weights, including the Docker images that contain them:
+CC-BY-NC-4.0** (`LICENSE-MODEL`), following the training data.
 
 Built by [Ghana Open AI](https://huggingface.co/ghanaopenai), supported by [Ghana NLP](https://ghananlp.org).

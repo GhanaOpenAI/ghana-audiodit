@@ -1,0 +1,10 @@
+Model weights: Creative Commons Attribution-NonCommercial 4.0 International (CC-BY-NC-4.0)
+https://creativecommons.org/licenses/by-nc/4.0/
+
+The ghana-audiodit model weights (https://huggingface.co/ghanaopenai/ghana-audiodit), including
+any copy of them in a container image built from this repository, are licensed under
+CC-BY-NC-4.0, following the training data (ghananlpcommunity/ghana-speech). You may share and
+adapt them for non-commercial purposes, with attribution to Ghana Open AI (supported by Ghana NLP).
+
+The base model LongCat-AudioDiT and the code in this repository are MIT-licensed
+(LICENSE, LICENSE-longcat-audiodit); that does not extend to the fine-tuned weights.

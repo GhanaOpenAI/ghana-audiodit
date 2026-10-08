@@ -3,6 +3,7 @@
 !README.md
 !LICENSE
 !LICENSE-longcat-audiodit
+!LICENSE-MODEL
 !docker/requirements.lock
 !ghana_audiodit/**
 **/__pycache__
