@@ -54,10 +54,6 @@
   .chip { font: inherit; font-size: 12.5px; border: 1px solid var(--line); background: var(--bg); color: var(--fg);
           border-radius: 999px; padding: 3px 10px; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip:hover { border-color: var(--accent); }
-  .seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
-  .seg button { font: inherit; font-size: 14px; border: 0; border-radius: 7px; padding: 8px 6px; background: transparent; color: var(--muted); cursor: pointer; }
-  .seg button[aria-pressed=true] { background: var(--panel); color: var(--fg); font-weight: 600; box-shadow: var(--shadow); }
-  .mode-desc { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
   .pane { margin-top: 12px; }
   .pane[hidden] { display: none; }
   .btn { font: inherit; font-weight: 600; border-radius: 9px; padding: 10px 16px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
@@ -65,7 +61,8 @@
   .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); width: 100%; padding: 12px; font-size: 15.5px; }
   .btn.primary:disabled { opacity: .55; cursor: progress; }
   .btn.small { padding: 6px 11px; font-size: 13px; font-weight: 500; }
-  .rec { color: var(--danger); }
+  .info { font-size: 13px; color: var(--muted); background: var(--bg); border: 1px solid var(--line);
+          border-radius: 8px; padding: 8px 10px; margin: 10px 0 0; }
   audio { width: 100%; margin-top: 6px; }
   details { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
   summary { cursor: pointer; font-weight: 500; font-size: 14px; }
@@ -124,40 +121,15 @@
 
       <section class="card" aria-labelledby="h-voice">
         <h2 id="h-voice">Voice</h2>
-        <div class="seg" role="group" aria-label="Voice mode">
-          <button type="button" data-mode="noprompt" aria-pressed="true">No prompt</button>
-          <button type="button" data-mode="speaker" aria-pressed="false">Built-in speaker</button>
-          <button type="button" data-mode="prompt" aria-pressed="false">Your voice</button>
-        </div>
-        <p class="mode-desc" id="modeDesc"></p>
-
-        <div class="pane" data-pane="noprompt">
-          <label for="seed">Voice seed <span class="hint">· leave empty for a new voice each time; reuse a seed to keep a voice</span></label>
+        <div class="pane">
+          <label for="seed" style="margin-top:0">Voice seed <span class="hint">· leave empty for a new voice each time; reuse a seed to keep a voice</span></label>
           <div class="row">
             <input type="number" id="seed" min="0" step="1" placeholder="random" style="flex:1">
             <button type="button" class="btn small" id="seedReuse" disabled>Use last seed</button>
           </div>
         </div>
 
-        <div class="pane" data-pane="speaker" hidden>
-          <div class="hint" id="spkInfo">Select a language to hear its speaker.</div>
-          <audio id="spkAudio" controls preload="none"></audio>
-        </div>
 
-        <div class="pane" data-pane="prompt" hidden>
-          <label>Reference audio <span class="hint">· 3–15 s of one person speaking clearly</span></label>
-          <div class="row">
-            <input type="file" id="refFile" accept="audio/*" class="sr">
-            <button type="button" class="btn small" id="refPick">Upload file</button>
-            <button type="button" class="btn small" id="refRec">● Record</button>
-            <span class="hint" id="refName"></span>
-          </div>
-          <audio id="refAudio" controls hidden></audio>
-          <label for="refText">Transcript of the reference <span class="hint">· optional, transcribed automatically if empty</span></label>
-          <textarea id="refText" style="min-height:64px" placeholder="What is said in the reference audio"></textarea>
-          <label for="refLang">Language of the reference</label>
-          <select id="refLang"></select>
-        </div>
 
         <details>
           <summary>Advanced settings</summary>
@@ -195,22 +167,152 @@
 
 <script>
 const EXAMPLES = {
-  Asante_Twi_twi: ["Akwaaba! Wo ho te sɛn ɛnnɛ?", "Ɛnnɛ yɛbɛka nsɛm a ɛfa yɛn man Ghana ho.", "Me pɛ sɛ me kɔ Kumasi ɔkyena anɔpa."],
-  Akuapem_Twi_twi: ["Akwaaba, yɛda wo ase sɛ woaba.", "Nnipa nyinaa wɔ hokwan sɛ wɔde wɔn adwene ka."],
-  Fante_fat: ["Me ma wo akwaaba wɔ Cape Coast.", "Ɔdɔ na ɔma abusua yɛ dzen."],
-  Ewe_ewe: ["Woezɔ! Aleke nèfɔ ŋdi sia?", "Mia nɔviwo, egbe míaƒo nu tso míaƒe dukɔ ŋu."],
-  Dagbani_dag: ["Dagbani yɛltɔɣa nyɛla din be Ghana nudirigu ni."],
-  Hausa_hau: ["Barka da zuwa! Yaya kake yau?", "Mun gode da kuka saurare mu."],
-  English_eng: ["Good evening, and welcome to the news from Accra.", "Please remember to drink enough water during the hot season."],
+ "Akuapem_Twi_twi": [
+  "Akwaaba, yɛda wo ase sɛ woaba.",
+  "Nnipa nyinaa wɔ hokwan sɛ wɔde wɔn adwene ka.",
+  "Afei, wobedwira ne ho afi fi a owufo no de aka no no ho."
+ ],
+ "Anyin_any": [
+  "Mɩn kʋala mɩn di Epafalasɩ anwʋn adanzɩɛ kɛ, ɔ bɔ ɛmɔ anwʋn mɔndɩnlɩn kpa."
+ ],
+ "Asante_Twi_twi": [
+  "Akwaaba! Wo ho te sɛn ɛnnɛ?",
+  "Ɛnnɛ yɛbɛka nsɛm a ɛfa yɛn man Ghana ho.",
+  "Me pɛ sɛ me kɔ Kumasi ɔkyena anɔpa.",
+  "Na afei, hwɛ, merekɔ me man mu: Bra na menkasa menkyerɛ wo deɛ ɔman yi bɛyɛ wo man nna a ɛdi akyire no mu."
+ ],
+ "Avatime_avn": [
+  "Boŋu i, maxwa mlɔ si baʋia, lɛ ese linu si kidɔ kakaa gi menu adɔ ni Mɔka Aya klɔ ɛ, kɛ masi mlɔ."
+ ],
+ "Bassar_Ntcham_bud": [
+  "Bi nín yāntì bi kūū Yeesu puee, bi ŋá min Unimbɔti bɔnaatiliibi nìn sòon̄ ki yóoǹee dee."
+ ],
+ "Bimoba_bim": [
+  "Ti dukii ki yeen a nisaarik yada teenu paake ki Yennu yet a u tee niŋanɔ; ki li ki tee a wa waa sennu na paak kaa."
+ ],
+ "Birifor_Southern_biv": [
+  "Yɩ taa de libie ɛ, bɩɩ wʊɔ ɛ, bɩɩ na fɔɔr ɛ, na yɩ puor nɩrɛ taa wa jaa a sɔr pɔ ɛ."
+ ],
+ "Bissa_bib": [
+  "Woso mɩŋŋa y'awɔɔ bir, jɩnalɛrazaa m, an nɩ hɔ kʊ wɔɔ yɛ naa barɛ."
+ ],
+ "Buli_bwu": [
+  "Dila nyiŋ Naawen sui yaa puuri ale wa nuruma, a kisi wa le soa baai la."
+ ],
+ "Chumburung_ncu": [
+  "Nana, fo̱ a kɔɔre̱ Wuribware̱ akyaamɛɛ ne̱ baa dɛɛ kye̱na‑ɔ gyi bɛɛɛ?"
+ ],
+ "Dagaare_dga": [
+  "Wɔmɔ na naŋ na bebe kɔɔre, ka a Saa pãã na ko yɛ bonna zaa yɛ naŋ sɔre yi O zie a N yuori eŋɛ."
+ ],
+ "Dagbani_dag": [
+  "Dagbani yɛltɔɣa nyɛla din be Ghana nudirigu ni.",
+  "Bɛn mali suhupiɛlli, yin’ pahimiya bɛ zuɣu m-mali suhupiɛlli; bɛn fabinda, yin’ pahimiya bɛ zuɣu fabili."
+ ],
+ "Dangme_ada": [
+  "Kaa nihi nɛ ngɛ Nyɔmtsɛ ɔ mi ɔ, kikɛ nɛ ɔ pɛ ji bɔ nɛ sa nɛ nyɛɛ ba nyɛ je mi."
+ ],
+ "Deg_mzw": [
+  "Dɛ Korowii laa nɔn kpɔ ba nɛɛ kɛŋɔ wɛɛ he baa, ka tel kɛŋɔ ba bwa aa tona."
+ ],
+ "English_eng": [
+  "Good evening, and welcome to the news from Accra.",
+  "Please remember to drink enough water during the hot season."
+ ],
+ "Ewe_ewe": [
+  "Woezɔ! Aleke nèfɔ ŋdi sia?",
+  "Mia nɔviwo, egbe míaƒo nu tso míaƒe dukɔ ŋu.",
+  "Agbe le nu dzɔdzɔe wɔwɔ ƒe mɔ dzi; ke ame si to mɔ sia dzi la, meyia ku me o."
+ ],
+ "Fante_fat": [
+  "Me ma wo akwaaba wɔ Cape Coast.",
+  "Ɔdɔ na ɔma abusua yɛ dzen.",
+  "Na Moses nye Josua kɔree, na wokeyii hɔnho kyerɛe wɔ ehyiadzibuw no mu."
+ ],
+ "Fulfulde_Maasina_ffm": [
+  "Homo e men fuu heɓii moƴƴere Laamɗo ko waarata no Almasiihu hokkiri ɗum nii."
+ ],
+ "Gikyode_acd": [
+  "Gɛnen gɛdena gigyɛbi gidɛ gi tansi gi gyɛ ilaa boduduusɛ."
+ ],
+ "Gonja_gjn": [
+  "Ama esa nɛ e wu na mo kurgepo beeŋ tiŋ n nya agbo ŋkpal e ka wu so."
+ ],
+ "Hausa_hau": [
+  "Barka da zuwa! Yaya kake yau?",
+  "Mun gode da kuka saurare mu.",
+  "Ba za a ƙara samun ma’aikaci na kowace irin sana’a."
+ ],
+ "Kabiye_kbp": [
+  "Patasɩ wobu ɛsɩndaa pazɩ lɛ, patasɩ maɣzʋʋ ḿbʋ́ nɛ pana haŋ hiu nɛ kagbaanzɩ."
+ ],
+ "Kasem_xsm": [
+  "Á ná maŋe á jage mo a zo logo kom gugworru yiga yiga de, Baŋa Wɛ wó la abam dáane o ja jwoori ywo."
+ ],
+ "Konkomba_xon": [
+  "U ni waaninkpiib nan kpokl le u lee libuul li ni bi ga ŋa baakakaa na."
+ ],
+ "Konni_kma": [
+  "Dama Ŋmɩŋ naarɩ sɩɩ sɩba naaŋ wʋnyɩ dɩ wana ʋ tigiŋ yɔŋɩsɩ dɩ ʋ bɩɩsɩ ba hamɩŋ ligire dɩ mʋna die."
+ ],
+ "Kusaal_kus": [
+  "Kohat tuŋ la dim banɛ da tʋm Laasʋg Fuug Sʋgʋr la tʋʋma kalli la."
+ ],
+ "Lelemi_lef": [
+  "Na si uwi ɔni na bebweyi bamɛni bédi bénye ni, na ebi ammɔ lɛnɔ édi énye."
+ ],
+ "Mampruli_maw": [
+  "Wula ka ti ya yɛli yaasa? Ni, Naawunni daa bu niŋi din tuusi, bee? - Ay! di ku toaai m‑bɛ lala."
+ ],
+ "Nawuri_naw": [
+  "Nɩɩ Ɔnyɩrɩpɛ Ɩbwaarɛ kan kyula mʋ, n biti fɛɛ n gyii nkɛ gbɛrɛɛ kʋ fanɛ asɛ."
+ ],
+ "Ninkare_gur": [
+  "Ya han deni timpaberɛ wa zuo dinɛ, timpaberɛ wa zuo wan nɔŋɛ ya wuu a dinɛ la."
+ ],
+ "Nkonya_nko": [
+  "Mʋ́ sʋ mʋ́ bʋpʋ mɩ asʋn ya Roma Owie Dɛhɛn onuto ogyi mʋ́."
+ ],
+ "Ntrubo_ntr": [
+  "Mɔna walaŋ ŋon ɔ yɛɛ kakyeŋ seŋ keŋkeŋ kelii ɔto na, Wurubuarɛ waa lɛɛ ɔ nyee."
+ ],
+ "Nzema_nzi": [
+  "Na ɔvi mekɛ ne anu Dwudase bɔle ɔ bo kɛ ɔkpondɛ adenle yealua zo yeaye Gyisɛse yeamaa."
+ ],
+ "Paasaal_sig": [
+  "Saŋa no tɩyaŋ buloŋ nala hʋ buloŋ aa laa Yesu wɩya di a we Gyudɩya paalʋʋ tɩyaŋ ha fa bɩ gyɩma ŋ."
+ ],
+ "Sehwi_sfw": [
+  "Efraimfoɛ koɛhonɛfoɛ bɔ betiratira agyaen ɔ."
+ ],
+ "Sekpele_lip": [
+  "Óte mɛ Yerusalem, umǝnkplɛ kɛnkɛ ǝmǝ lɛbɔ utsyi Onanto ɔflɔ kato ɔnlɛ kasɔ bubǝ."
+ ],
+ "Selee_snw": [
+  "Diekye batii bawo latoobuɛ alɛ, Ntu Kpeesatɛ Yohane nintookple ɛɛtaka eekye bakpi kamɛ ɛɛwa."
+ ],
+ "Sisaala_Tumulung_sil": [
+  "Ʋ fa sɩɩ vɛŋ jebiiŋ nyuŋ ŋɩɩ, nɩaa na dɩ tʋɔ-chei gɛrɩŋ nɛ ʋ fa laalɛ aŋ laalɛ gɛrɩŋ daŋ."
+ ],
+ "Siwu_akp": [
+  "Yesu ɔ̃ wũ ɔfɔ ma ɔɣere ma Ɣaa sigarakaɖekɔ̃ itɔ̃me fiɛ ɔsa mma nto manyɛ."
+ ],
+ "Tampulma_tpm": [
+  "N wa fun wa di mu wa ya chene, amaa n wa di n wa biksi nara a wuti munwa."
+ ],
+ "Tem_kdh": [
+  "Ɖájaa Ɩsɔ́ɔ ɩmʊ́ ɩmɔɔ́na bɔɖɔ́ɔ́zɩ yɩ báa ngbeére hálɩ bɩ́dɛ́ndɛŋ́."
+ ],
+ "Tuwuli_bov": [
+  "Nɛ foesũ kã be anɛ mɔ ɔsĩ mɔ ɔsĩ ayekĩ baana katɛkado kĩ kideĩ ɔsĩ."
+ ],
+ "Vagla_vag": [
+  "Bɛl kee gaa chug a Dia keŋkere koŋlii bɛl, unla hiŋ ge kee bɛl gaa chug a keŋkere bɛl koŋlii."
+ ]
 };
 const CODESWITCH = { Asante_Twi_twi: "Ɛnnɛ, Microsoft de Abilities for Jobs Program yi baeɛ, na ɛsɛ sɛ yɛn mmofra bɔ mmɔden fa so." };
-const MODE_DESC = {
-  noprompt: "The model chooses a voice on its own. Each new seed gives a different voice.",
-  speaker: "Uses the language's built-in speaker, a voice from the training data.",
-  prompt: "Clones the voice from your reference recording.",
-};
 const $ = (id) => document.getElementById(id);
-let API = "", MAXC = 600, mode = "noprompt", langs = [], lastSeed = null, refBlob = null, recorder = null, history = [];
+let API = "", MAXC = 600, langs = [], lastSeed = null, history = [];
 
 async function init() {
   try { API = (await (await fetch("config.json", { cache: "no-store" })).json()).api.replace(/\/$/, ""); }
@@ -219,12 +321,9 @@ async function init() {
   setInterval(health, 30000);
   try { langs = await (await fetch(API + "/languages")).json(); } catch { langs = []; }
   if (!langs.length) langs = Object.keys(EXAMPLES).map((k) => ({ key: k, name: k.split("_").slice(0, -1).join(" ") }));
-  for (const sel of [$("lang"), $("refLang")]) {
-    sel.innerHTML = langs.map((l) => `<option value="${l.key}">${l.name}</option>`).join("");
-    sel.value = "Asante_Twi_twi";
-  }
-  $("text").value = EXAMPLES.Asante_Twi_twi[0];
-  onLang(); count();
+  $("lang").innerHTML = langs.map((l) => `<option value="${l.key}">${l.name}</option>`).join("");
+  $("lang").value = "Asante_Twi_twi";
+  onLang();
 }
 
 async function health() {
@@ -239,21 +338,13 @@ function setStatus(ok, text) { $("dot").className = "dot " + (ok ? "ok" : "bad")
 function onLang() {
   const k = $("lang").value, l = langs.find((x) => x.key === k) || {};
   const ex = (EXAMPLES[k] || []).concat(CODESWITCH[k] ? [CODESWITCH[k]] : []);
-  if (!ex.length && l.speaker) ex.push(l.speaker.text);
+
   $("examples").innerHTML = ex.map((t, i) => `<button type="button" class="chip" data-i="${i}" title="${esc(t)}">${esc(t)}</button>`).join("");
   $("examples").querySelectorAll(".chip").forEach((b) => b.onclick = () => { $("text").value = ex[+b.dataset.i]; count(); });
-  $("refLang").value = k;
-  $("spkAudio").src = API + `/speakers/${k}.wav`;
-  $("spkInfo").innerHTML = l.speaker ? `<b>${esc(l.name)}</b> speaker · ${l.speaker.seconds.toFixed(1)} s<br><span class="mono">${esc(l.speaker.text)}</span>`
-                                     : "No built-in speaker information available.";
+  // switching language puts that language's first example in the text box
+  if (ex.length) { $("text").value = ex[0]; count(); }
 }
 
-function setMode(m) {
-  mode = m;
-  document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === m));
-  document.querySelectorAll(".pane").forEach((p) => p.hidden = p.dataset.pane !== m);
-  $("modeDesc").textContent = MODE_DESC[m];
-}
 
 function count() {
   const n = $("text").value.trim().length;
@@ -269,15 +360,10 @@ async function generate() {
   showErr("");
   if (!text) return showErr("Please type some text.");
   if (text.length > MAXC) return showErr(`Text is limited to ${MAXC} characters.`);
-  if (mode === "prompt" && !refBlob) return showErr("Upload or record a reference voice first.");
   const fd = new FormData();
-  fd.append("text", text); fd.append("language", $("lang").value); fd.append("mode", mode);
+  fd.append("text", text); fd.append("language", $("lang").value);
   fd.append("steps", $("steps").value); fd.append("cfg_strength", $("cfg").value); fd.append("speed", $("speed").value);
-  if (mode === "noprompt" && $("seed").value !== "") fd.append("seed", $("seed").value);
-  if (mode === "prompt") {
-    fd.append("prompt_audio", refBlob, refBlob.name || "reference.webm");
-    fd.append("prompt_text", $("refText").value.trim()); fd.append("prompt_language", $("refLang").value);
-  }
+  if ($("seed").value !== "") fd.append("seed", $("seed").value);
   const btn = $("go"), t0 = performance.now();
   btn.disabled = true;
   const tick = setInterval(() => btn.innerHTML = `<span class="spin"></span>Generating… ${((performance.now() - t0) / 1000).toFixed(0)} s`, 250);
@@ -286,10 +372,10 @@ async function generate() {
     if (!r.ok) { let d = ""; try { d = (await r.json()).detail; } catch {} throw new Error(d || `Server error (${r.status})`); }
     const blob = await r.blob(), url = URL.createObjectURL(blob);
     const dec = (h) => decodeURIComponent(r.headers.get(h) || "");
-    const item = { url, text, lang: $("lang").selectedOptions[0].text, mode, seed: r.headers.get("X-Seed"),
+    const item = { url, text, lang: $("lang").selectedOptions[0].text, seed: r.headers.get("X-Seed"),
                    dur: r.headers.get("X-Duration"), took: r.headers.get("X-Elapsed"),
-                   modelText: dec("X-Model-Text"), promptText: dec("X-Prompt-Text") };
-    lastSeed = item.seed; $("seedReuse").disabled = mode !== "noprompt";
+                   modelText: dec("X-Model-Text") };
+    lastSeed = item.seed; $("seedReuse").disabled = false;
     render(item); history.unshift(item); renderHistory();
   } catch (e) {
     showErr(e.message === "Failed to fetch" ? "Could not reach the server. It may be offline; please try again later." : e.message);
@@ -297,62 +383,33 @@ async function generate() {
 }
 
 function render(it) {
-  const modeName = { noprompt: "No prompt", speaker: "Built-in speaker", prompt: "Your voice" }[it.mode];
   $("out").innerHTML = `
     <audio controls autoplay src="${it.url}"></audio>
     <div class="row" style="margin-top:10px"><a class="btn small" href="${it.url}" download="ghana-audiodit.wav">Download WAV</a></div>
     <dl class="meta">
       <dt>Language</dt><dd>${esc(it.lang)}</dd>
-      <dt>Voice</dt><dd>${modeName}${it.mode === "noprompt" ? ` · seed <span class="mono">${esc(it.seed)}</span>` : ""}</dd>
+      <dt>Voice seed</dt><dd class="mono">${esc(it.seed)}</dd>
       <dt>Length</dt><dd>${(+it.dur).toFixed(1)} s audio · generated in ${(+it.took).toFixed(1)} s</dd>
-      ${it.promptText ? `<dt>Reference</dt><dd class="mono">${esc(it.promptText)}</dd>` : ""}
       <dt>Model input</dt><dd class="mono">${esc(it.modelText)}</dd>
     </dl>`;
 }
 
 function renderHistory() {
   $("hist").innerHTML = history.slice(0, 8).map((h) =>
-    `<li><div class="t">${esc(h.lang)} · ${(+h.dur).toFixed(1)} s${h.mode === "noprompt" ? ` · seed ${esc(h.seed)}` : ""}</div>
+    `<li><div class="t">${esc(h.lang)} · ${(+h.dur).toFixed(1)} s · seed ${esc(h.seed)}</div>
      <div style="font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.text)}</div>
      <audio controls preload="none" src="${h.url}"></audio></li>`).join("");
 }
 
-function setRef(blob, name) {
-  refBlob = blob; refBlob.name = name;
-  $("refName").textContent = name;
-  $("refAudio").src = URL.createObjectURL(blob); $("refAudio").hidden = false;
-}
 
-async function toggleRecord() {
-  if (recorder && recorder.state === "recording") { recorder.stop(); return; }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const chunks = [];
-    recorder = new MediaRecorder(stream);
-    recorder.ondataavailable = (e) => chunks.push(e.data);
-    recorder.onstop = () => {
-      stream.getTracks().forEach((t) => t.stop());
-      setRef(new Blob(chunks, { type: recorder.mimeType }), "recording." + (recorder.mimeType.includes("ogg") ? "ogg" : "webm"));
-      $("refRec").textContent = "● Record"; $("refRec").classList.remove("rec");
-    };
-    recorder.start();
-    $("refRec").textContent = "■ Stop"; $("refRec").classList.add("rec");
-    setTimeout(() => recorder && recorder.state === "recording" && recorder.stop(), 15000);
-  } catch { showErr("Microphone access was blocked."); }
-}
 
-document.querySelectorAll(".seg button").forEach((b) => b.onclick = () => setMode(b.dataset.mode));
 $("lang").onchange = onLang;
 $("text").oninput = count;
 $("go").onclick = generate;
 $("text").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) generate(); });
 $("seedReuse").onclick = () => { if (lastSeed) $("seed").value = lastSeed; };
-$("refPick").onclick = () => $("refFile").click();
-$("refFile").onchange = (e) => { const f = e.target.files[0]; if (f) setRef(f, f.name); };
-$("refRec").onclick = toggleRecord;
 for (const [id, fmt] of [["steps", (v) => v], ["cfg", (v) => (+v).toFixed(1)], ["speed", (v) => (+v).toFixed(2) + "×"]])
   $(id).oninput = () => $(id + "V").textContent = fmt($(id).value);
-setMode("noprompt");
 init();
 </script>
 </body>

@@ -2,10 +2,10 @@
 make_card_samples.py — Audio samples for the model card, generated with the released model.
 
 Held-out sentences (validation split, never trained on) for a showcase set of languages,
-each in two modes: no prompt (fixed seed) and the language's built-in speaker.
+generated without a voice prompt with two seeds (two different voices).
 
     python scripts/make_card_samples.py --model <release dir> --val_manifest <workdir>/latents/val_universal.jsonl
-Output: <release>/samples/<lang>_{noprompt,speaker}.wav + samples.json
+Output: <release>/samples/<lang>_seed{0,1}.wav + samples.json
 """
 
 import argparse
@@ -47,12 +47,12 @@ def main():
     tts = GhanaTTS.from_pretrained(args.model)
     meta = []
     for lang, text, name in items:
-        for mode in ("noprompt", "speaker"):
-            r = tts.synthesize(text, language=lang, mode=mode, seed=args.seed)
-            r.save(out / f"{name}_{mode}.wav")
-            meta.append({"name": name, "language": lang, "mode": mode, "text": text,
-                         "file": f"samples/{name}_{mode}.wav", "seconds": round(r.seconds, 1)})
-            print(f"[card] {name:24s} {mode:8s} {r.seconds:4.1f}s  {text[:60]}", flush=True)
+        for k, seed in enumerate((args.seed, args.seed + 1)):
+            r = tts.synthesize(text, language=lang, seed=seed)
+            r.save(out / f"{name}_seed{k}.wav")
+            meta.append({"name": name, "language": lang, "voice": k, "seed": seed, "text": text,
+                         "file": f"samples/{name}_seed{k}.wav", "seconds": round(r.seconds, 1)})
+            print(f"[card] {name:24s} seed {seed:4d} {r.seconds:4.1f}s  {text[:60]}", flush=True)
     (out / "samples.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
 
 

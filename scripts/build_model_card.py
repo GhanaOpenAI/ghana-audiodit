@@ -27,20 +27,17 @@ def main():
     samples = json.loads((rel / "samples" / "samples.json").read_text(encoding="utf-8"))
     by_name: dict[str, dict] = {}
     for s in samples:
-        by_name.setdefault(s["name"], {"text": s["text"], "language": s["language"]})[s["mode"]] = s["file"]
+        by_name.setdefault(s["name"], {"text": s["text"], "language": s["language"]})[s["voice"]] = s["file"]
     audio = lambda f: f'<audio controls preload="none" src="{base}/{f}"></audio>'
     rows = []
     for name, s in by_name.items():
         label = "Twi + English (code-switching)" if "codeswitch" in name else LANGUAGES[s["language"]]["name"]
         note = " *(written for this page)*" if s["language"] == "English_eng" or "codeswitch" in name else ""
-        rows.append(f"| {label} | {html.escape(s['text'])}{note} | {audio(s['noprompt'])} | {audio(s['speaker'])} |")
+        rows.append(f"| {label} | {html.escape(s['text'])}{note} | {audio(s[0])} | {audio(s[1])} |")
 
-    speakers = json.loads((rel / "speakers" / "speakers.json").read_text(encoding="utf-8"))
-    lang_rows = ["| Language | `language=` | ISO 639-3 | Built-in speaker |", "| --- | --- | --- | --- |"]
+    lang_rows = ["| Language | `language=` | ISO 639-3 |", "| --- | --- | --- |"]
     for k, v in sorted(LANGUAGES.items(), key=lambda kv: kv[1]["name"]):
-        spk = speakers.get(k)
-        lang_rows.append(f"| {v['name']} | `{k}` | `{v['code']}` | "
-                         + (f"[{spk['seconds']:.1f} s]({base}/speakers/{spk['file']})" if spk else "—") + " |")
+        lang_rows.append(f"| {v['name']} | `{k}` | `{v['code']}` |")
 
     card = (ROOT / "release" / "README.md").read_text(encoding="utf-8")
     card = card.replace("<!-- SAMPLES -->", "\n".join(rows)).replace("<!-- LANGUAGES -->", "\n".join(lang_rows))

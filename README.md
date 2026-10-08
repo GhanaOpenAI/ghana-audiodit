@@ -55,20 +55,15 @@ from ghana_audiodit import GhanaTTS
 
 tts = GhanaTTS.from_pretrained()                       # ghanaopenai/ghana-audiodit
 
-out = tts.synthesize("Akwaaba! Wo ho te sɛn ɛnnɛ?", language="Asante_Twi_twi")      # no prompt
+out = tts.synthesize("Akwaaba! Wo ho te sɛn ɛnnɛ?", language="Asante_Twi_twi")
 out.save("twi.wav")
+print(out.seed)                         # the voice used; pass seed=... to get it again
 
-tts.synthesize("Woezɔ! Aleke nèfɔ ŋdi sia?", language="Ewe", mode="speaker").save("ewe.wav")
-
-tts.synthesize("Me ma wo akwaaba wɔ Cape Coast.", language="Fante_fat", mode="prompt",
-               prompt_audio="me.wav", prompt_text="What I say in me.wav").save("fante.wav")
+tts.synthesize("Woezɔ! Aleke nèfɔ ŋdi sia?", language="Ewe", seed=42).save("ewe.wav")
 ```
 
-| Mode | Voice |
-| --- | --- |
-| `noprompt` (default) | Chosen by the model from random noise; `seed` reproduces it |
-| `speaker` | The language's built-in speaker, shipped with the model |
-| `prompt` | Cloned from your 3–15 s reference recording (plus its transcript) |
+> **No voice cloning.** The model was trained mostly without voice prompts (85 % of examples), and
+> prompted generation was not reliable enough to ship. The voice comes from the seed.
 
 Write in the normal spelling of the language, English words included. The package converts text
 to the [africa-g2p](https://github.com/AfriSpeech/africa-g2p) universal spelling the model was
@@ -81,7 +76,8 @@ durations from per-language speaking rates. See the language table above for `la
 | --- | --- |
 | `ghana_audiodit/` | Inference package: `GhanaTTS`, text preparation, model code, API server (`server.py`) |
 | `server/` | Supervisor and Cloudflare-tunnel scripts for running the API on your own machine |
-| `deploy/` | One-file [Modal](https://modal.com) deployment of the API |
+| `Dockerfile`, `docker/` | Self-contained GPU image of the API (model included) |
+| `deploy/` | Optional [Modal](https://modal.com) example |
 | `space/` | The static Hugging Face Space (one HTML page; API address in `config.json`) |
 | `training/` | Latent caching, universal-spelling manifests, trainer, side CER evaluation, fine-tuning guide |
 | `scripts/` | Release export, model-card samples and card building |
@@ -91,41 +87,37 @@ durations from per-language speaking rates. See the language table above for `la
 The API (FastAPI) is the one behind the demo. This is a diffusion model, so it is served with plain
 PyTorch, not an LLM server such as vLLM.
 
-**Any GPU machine**
+**Docker (recommended)** — the image contains the model and the exact tested dependency versions,
+so it runs offline on any machine with an NVIDIA GPU (≥ 6 GB) and the NVIDIA container toolkit:
+
+```bash
+docker run --gpus all -p 8000:8000 ghcr.io/ghanaopenai/ghana-audiodit:latest
+curl -X POST localhost:8000/synthesize -F "text=Akwaaba! Wo ho te sɛn?" -F language=Asante_Twi_twi -o out.wav
+```
+
+`ghcr.io/ghanaopenai/ghana-audiodit:slim` leaves the model out and downloads it on first start
+(mount a volume at `/models` to keep it). Build either yourself with `docker build .`
+(`--build-arg BAKE_MODEL=0` for slim). The same image works on Modal, RunPod, Kubernetes and the like;
+`deploy/modal_app.py` is an optional Modal example.
+
+**Without Docker**
 
 ```bash
 pip install "ghana-audiodit[server] @ git+https://github.com/GhanaOpenAI/ghana-audiodit"
-OMNIASR_SHERPA_REPO=csukuangfj/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-2025-11-12 \
-uvicorn ghana_audiodit.server:app --host 0.0.0.0 --port 8210
+uvicorn ghana_audiodit.server:app --host 0.0.0.0 --port 8000
 ```
 
-`OMNIASR_SHERPA_REPO` is optional: with it, reference audio uploaded without a transcript is
-transcribed automatically. For a long-running service, `server/systemd/` has example units that start the API and a
+For a long-running service, `server/systemd/` has example units that start the API and a
 Cloudflare tunnel on boot and restart them on failure; `server/run_supervised.sh` and
 `server/run_tunnel.sh` do the same without systemd.
-
-**Modal (serverless GPU)**
-
-```bash
-pip install modal && modal setup
-modal deploy deploy/modal_app.py      # → https://<workspace>--ghana-audiodit-api.modal.run
-```
-
-Runs on an L4, scales to zero when idle, and caches the model in a Modal Volume.
 
 **Endpoints**
 
 | Method | Path | |
 | --- | --- | --- |
 | GET | `/health` | Status, queue length |
-| GET | `/languages` | The 43 languages and their built-in speakers |
-| GET | `/speakers/{language}.wav` | Built-in speaker preview |
-| POST | `/synthesize` | Multipart form: `text`, `language`, `mode` (`noprompt` / `speaker` / `prompt`), `prompt_audio`, `prompt_text`, `seed`, `steps`, `cfg_strength`, `speed` → WAV |
-
-```bash
-curl -X POST https://<your-endpoint>/synthesize -F "text=Akwaaba! Wo ho te sɛn?" \
-     -F language=Asante_Twi_twi -o out.wav
-```
+| GET | `/languages` | The 43 languages |
+| POST | `/synthesize` | Form fields: `text`, `language`, `seed`, `steps`, `cfg_strength`, `speed` → WAV |
 
 To use the web demo with your endpoint, set its address in `space/config.json`.
 

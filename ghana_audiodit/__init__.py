@@ -7,7 +7,7 @@
 
 from .languages import LANGUAGES, resolve
 from .text import prepare, to_universal
-from .tts import DEFAULT_REPO, MODES, GhanaTTS, Synthesis
+from .tts import DEFAULT_REPO, GhanaTTS, Synthesis
 
-__all__ = ["GhanaTTS", "Synthesis", "LANGUAGES", "MODES", "DEFAULT_REPO", "resolve", "prepare", "to_universal"]
+__all__ = ["GhanaTTS", "Synthesis", "LANGUAGES", "DEFAULT_REPO", "resolve", "prepare", "to_universal"]
 __version__ = "0.1.0"

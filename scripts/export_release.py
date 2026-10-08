@@ -4,7 +4,6 @@ export_release.py — Build the Hugging Face release folder from a training chec
     python scripts/export_release.py \
         --ckpt   <run>/step_0020000 \
         --train_manifest <workdir>/latents/train_universal.jsonl \
-        --speakers <release>/speakers \
         --out    <release>
 
 Produces:
@@ -12,7 +11,6 @@ Produces:
     configuration_audiodit.py, modeling_audiodit.py
                                         so AutoModel.from_pretrained(..., trust_remote_code=True) works
     lora/                               the LoRA adapter + full-tuned layers, for further fine-tuning
-    speakers/                           built-in speaker per language (wav + speakers.json)
     rates.json                          median latent frames per character, per language (durations)
     LICENSE-longcat-audiodit            upstream MIT license (weights card: CC-BY-NC-4.0, following the data)
 """
@@ -51,7 +49,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--train_manifest", required=True)
-    ap.add_argument("--speakers", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--base", default="meituan-longcat/LongCat-AudioDiT-1B")
     args = ap.parse_args()
@@ -72,11 +69,9 @@ def main():
     (out / "lora").mkdir(exist_ok=True)
     for f in ("adapter_config.json", "adapter_model.safetensors", "extras.pt"):
         shutil.copy(ckpt / f, out / "lora" / f)
-    if Path(args.speakers).resolve() != (out / "speakers").resolve():
-        shutil.copytree(args.speakers, out / "speakers", dirs_exist_ok=True)
     (out / "rates.json").write_text(json.dumps(rates(args.train_manifest), indent=1), encoding="utf-8")
     shutil.copy(ROOT / "LICENSE-longcat-audiodit", out / "LICENSE-longcat-audiodit")
-    print(f"[export] lora/, speakers/, rates.json, LICENSE-longcat-audiodit → {out}", flush=True)
+    print(f"[export] lora/, rates.json, LICENSE-longcat-audiodit → {out}", flush=True)
 
     # sanity: merged transformer must equal base+LoRA on a random input
     ref = AudioDiTModel.from_pretrained(args.base)

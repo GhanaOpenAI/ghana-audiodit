@@ -88,16 +88,14 @@ also varies with which random voice a seed lands on.
 ## 6. Export
 
 ```bash
-OMNIASR_SHERPA_DIR=... python training/select_speakers.py --manifest work/latents/train_universal.jsonl \
-    --out release/speakers                 # one built-in speaker per language
 python scripts/export_release.py --ckpt <run>/step_0020000 --train_manifest work/latents/train_universal.jsonl \
-    --speakers release/speakers --out release
+    --out release
 python scripts/make_card_samples.py --model release --val_manifest work/latents/val_universal.jsonl
 python scripts/build_model_card.py --release release
 ```
 
 `export_release.py` merges the LoRA into the base weights, checks the merge reproduces
-base+LoRA, and adds `lora/`, `speakers/`, `rates.json` and the model code.
+base+LoRA, and adds `lora/`, `rates.json` and the model code.
 
 ## Files
 
@@ -110,4 +108,3 @@ base+LoRA, and adds `lora/`, `speakers/`, `rates.json` and the model code.
 | `lora_utils.py` | LoRA injection / saving / loading (PEFT) |
 | `sample.py`, `noprompt_test.py` | Listening samples with and without a prompt |
 | `cer_watch.py` | Side CER evaluator (omniASR via sherpa-onnx) |
-| `select_speakers.py` | Picks the clearest training clip per language as its built-in speaker |
