@@ -63,7 +63,10 @@ gpu_lock = asyncio.Lock()
 
 @app.on_event("startup")
 def load() -> None:
-    state["tts"] = GhanaTTS.from_pretrained(MODEL, dtype=DTYPE)
+    tts = GhanaTTS.from_pretrained(MODEL, dtype=DTYPE)
+    # warm-up: the first synthesis compiles GPU kernels (~30 s); do it before taking traffic
+    tts.synthesize("Akwaaba.", language="Asante_Twi_twi", seed=0)
+    state["tts"] = tts
     asr_dir = ASR_DIR
     if not asr_dir and ASR_REPO:
         from huggingface_hub import snapshot_download
