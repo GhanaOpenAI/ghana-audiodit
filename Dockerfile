@@ -12,6 +12,9 @@
 # Same stack the release was tested on: Python 3.12, torch 2.9.1 + CUDA 12.8 (the torch wheel
 # bundles the CUDA libraries), pinned packages in docker/requirements.lock.
 FROM ubuntu:24.04
+LABEL org.opencontainers.image.source="https://github.com/GhanaOpenAI/ghana-audiodit" \
+      org.opencontainers.image.description="Text-to-speech for 43 Ghanaian languages (ghanaopenai/ghana-audiodit), inference API" \
+      org.opencontainers.image.licenses="MIT AND CC-BY-NC-4.0"
 
 ENV DEBIAN_FRONTEND=noninteractive PIP_NO_CACHE_DIR=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv ffmpeg libsndfile1 ca-certificates \
