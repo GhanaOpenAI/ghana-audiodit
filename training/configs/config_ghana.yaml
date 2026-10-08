@@ -1,0 +1,65 @@
+# LongCat-AudioDiT-1B — LoRA fine-tune on Ghana speech
+# (fish-s2-ghana/data10r ≈10 h/lang × 42 langs + Hausa 3 h from fish-s2-ghana/data)
+
+model:
+  model_dir: "meituan-longcat/LongCat-AudioDiT-1B"
+  dtype: "bfloat16"
+
+data:
+  train_manifest: "/path/to/workdir/latents/train.jsonl"
+  val_manifest:   "/path/to/workdir/latents/val.jsonl"
+  langs: null                 # null = all; or a list of folder names
+  max_text_len: 512
+  min_audio_sec: 2.5          # needs room for prompt_min + min_gen
+  max_audio_sec: 20.0
+  prompt_min_sec: 0.8
+  prompt_max_sec: 10.0
+  min_gen_sec: 1.0
+  prompt_frac_lo: 0.2
+  prompt_frac_hi: 0.7
+  min_text_chars: 4
+
+training:
+  output_dir: "/path/to/workdir/checkpoints/lora_r64"
+  resume_from: null
+  steps: 20000                # ≈4.5 epochs at batch 64
+  batch_size: 64
+  gradient_accumulation: 1
+  learning_rate: 1.0e-4
+  betas: [0.9, 0.95]          # paper
+  weight_decay: 0.01
+  warmup_steps: 500
+  max_grad_norm: 1.0
+  p_uncond: 0.1               # joint text+prompt drop (paper)
+  log_every: 50
+  val_every: 500
+  save_every: 2000
+  keep_last_n: 5
+  num_workers: 8
+  seed: 42
+
+lora:
+  r: 64
+  alpha: 64
+  dropout: 0.05
+
+# frozen | full | lora
+components:
+  dit_attn:             {mode: lora}
+  dit_ffn:              {mode: lora}
+  dit_adaln:            {mode: full}
+  text_embed:           {mode: full}
+  text_conv:            {mode: full}
+  latent_embed:         {mode: full}
+  latent_cond_embedder: {mode: full}
+  input_embed:          {mode: full}
+  output_proj:          {mode: full}
+  time_embed:           {mode: full}
+
+samples:
+  at_start: true              # base-model samples at step 0 for comparison
+  langs: [Asante_Twi_twi, Akuapem_Twi_twi, Fante_fat, Ewe_ewe, Dangme_ada, Dagbani_dag, Gonja_gjn, Hausa_hau, English_eng]
+  nfe: 16
+  cfg_strength: 4.0
+  guidance_method: apg
+  seed: 0

@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghana AudioDiT</title>
+<meta name="description" content="Text-to-speech for 43 Ghanaian languages and Ghanaian English.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --fg: #15181d; --muted: #5d6673; --line: #e3e6eb;
+    --accent: #0f7a52; --accent-fg: #ffffff; --accent-soft: #e5f4ed; --warn: #a3470d; --warn-soft: #fdf0e7;
+    --danger: #b42318; --focus: #2563eb; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1115; --panel: #161a20; --fg: #e8ebef; --muted: #9aa3ae; --line: #2a3038;
+      --accent: #34c38f; --accent-fg: #06261a; --accent-soft: #12291f; --warn: #f0a46c; --warn-soft: #2d1d11;
+      --danger: #f97066; --focus: #7aa7ff; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 Inter, system-ui, -apple-system, sans-serif; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 22px; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .sub { margin: 4px 0 0; color: var(--muted); max-width: 640px; }
+  .links { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+  .status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
+            border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--accent); } .dot.bad { background: var(--danger); }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; }
+  .card + .card { margin-top: 18px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  label { display: block; font-weight: 500; font-size: 14px; margin: 14px 0 6px; }
+  label:first-child { margin-top: 0; }
+  .hint { color: var(--muted); font-size: 13px; font-weight: 400; }
+  select, textarea, input[type=text], input[type=number] {
+    width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 9px 11px; }
+  textarea { resize: vertical; min-height: 128px; }
+  select:focus, textarea:focus, input:focus, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .between { justify-content: space-between; }
+  .count { font-size: 12px; color: var(--muted); }
+  .count.over { color: var(--danger); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font: inherit; font-size: 12.5px; border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+          border-radius: 999px; padding: 3px 10px; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip:hover { border-color: var(--accent); }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { font: inherit; font-size: 14px; border: 0; border-radius: 7px; padding: 8px 6px; background: transparent; color: var(--muted); cursor: pointer; }
+  .seg button[aria-pressed=true] { background: var(--panel); color: var(--fg); font-weight: 600; box-shadow: var(--shadow); }
+  .mode-desc { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .pane { margin-top: 12px; }
+  .pane[hidden] { display: none; }
+  .btn { font: inherit; font-weight: 600; border-radius: 9px; padding: 10px 16px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); width: 100%; padding: 12px; font-size: 15.5px; }
+  .btn.primary:disabled { opacity: .55; cursor: progress; }
+  .btn.small { padding: 6px 11px; font-size: 13px; font-weight: 500; }
+  .rec { color: var(--danger); }
+  audio { width: 100%; margin-top: 6px; }
+  details { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+  summary { cursor: pointer; font-weight: 500; font-size: 14px; }
+  .sliders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px; }
+  @media (max-width: 560px) { .sliders { grid-template-columns: 1fr; } }
+  .sliders label { margin: 0 0 4px; font-size: 13px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .note { font-size: 13px; border-radius: 8px; padding: 8px 10px; background: var(--warn-soft); color: var(--warn); margin-top: 10px; }
+  .error { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 28px 10px; border: 1px dashed var(--line); border-radius: 10px; }
+  .meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin-top: 12px; }
+  .meta dt { color: var(--muted); } .meta dd { margin: 0; overflow-wrap: anywhere; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .hist { list-style: none; margin: 0; padding: 0; }
+  .hist li { border-top: 1px solid var(--line); padding: 10px 0; }
+  .hist li:first-child { border-top: 0; padding-top: 0; }
+  .hist .t { font-size: 13px; color: var(--muted); }
+  .spin { width: 15px; height: 15px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+          display: inline-block; vertical-align: -2px; animation: s .8s linear infinite; margin-right: 8px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  footer { margin-top: 28px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ghana AudioDiT</h1>
+      <p class="sub">Text-to-speech for 43 Ghanaian languages and Ghanaian English, fine-tuned from LongCat-AudioDiT-1B.
+        Type in the normal spelling of the language; English words can be mixed in.</p>
+    </div>
+    <div class="row">
+      <nav class="links">
+        <a href="https://huggingface.co/ghanaopenai/ghana-audiodit" target="_blank" rel="noopener">Model</a>
+        <a href="https://github.com/GhanaOpenAI/ghana-audiodit" target="_blank" rel="noopener">Code</a>
+      </nav>
+      <span class="status" id="status" role="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <main>
+      <section class="card" aria-labelledby="h-text">
+        <h2 id="h-text">Text</h2>
+        <label for="lang">Language</label>
+        <select id="lang"></select>
+
+        <div class="row between" style="margin-top:14px">
+          <label for="text" style="margin:0">Text <span class="hint">· normal spelling</span></label>
+          <span class="count" id="count">0 / 600</span>
+        </div>
+        <textarea id="text" maxlength="1200" placeholder="Type something to say…"></textarea>
+        <div class="chips" id="examples" aria-label="Examples"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-voice">
+        <h2 id="h-voice">Voice</h2>
+        <div class="seg" role="group" aria-label="Voice mode">
+          <button type="button" data-mode="noprompt" aria-pressed="true">No prompt</button>
+          <button type="button" data-mode="speaker" aria-pressed="false">Built-in speaker</button>
+          <button type="button" data-mode="prompt" aria-pressed="false">Your voice</button>
+        </div>
+        <p class="mode-desc" id="modeDesc"></p>
+
+        <div class="pane" data-pane="noprompt">
+          <label for="seed">Voice seed <span class="hint">· leave empty for a new voice each time; reuse a seed to keep a voice</span></label>
+          <div class="row">
+            <input type="number" id="seed" min="0" step="1" placeholder="random" style="flex:1">
+            <button type="button" class="btn small" id="seedReuse" disabled>Use last seed</button>
+          </div>
+        </div>
+
+        <div class="pane" data-pane="speaker" hidden>
+          <div class="hint" id="spkInfo">Select a language to hear its speaker.</div>
+          <audio id="spkAudio" controls preload="none"></audio>
+        </div>
+
+        <div class="pane" data-pane="prompt" hidden>
+          <label>Reference audio <span class="hint">· 3–15 s of one person speaking clearly</span></label>
+          <div class="row">
+            <input type="file" id="refFile" accept="audio/*" class="sr">
+            <button type="button" class="btn small" id="refPick">Upload file</button>
+            <button type="button" class="btn small" id="refRec">● Record</button>
+            <span class="hint" id="refName"></span>
+          </div>
+          <audio id="refAudio" controls hidden></audio>
+          <label for="refText">Transcript of the reference <span class="hint">· optional, transcribed automatically if empty</span></label>
+          <textarea id="refText" style="min-height:64px" placeholder="What is said in the reference audio"></textarea>
+          <label for="refLang">Language of the reference</label>
+          <select id="refLang"></select>
+        </div>
+
+        <details>
+          <summary>Advanced settings</summary>
+          <div class="sliders">
+            <div><label for="steps">Quality steps: <b id="stepsV">16</b></label><input type="range" id="steps" min="8" max="32" step="2" value="16"></div>
+            <div><label for="cfg">Guidance: <b id="cfgV">4.0</b></label><input type="range" id="cfg" min="1" max="8" step="0.5" value="4"></div>
+            <div><label for="speed">Speed: <b id="speedV">1.00×</b></label><input type="range" id="speed" min="0.7" max="1.4" step="0.05" value="1"></div>
+          </div>
+        </details>
+      </section>
+
+      <div style="margin-top:18px">
+        <button type="button" class="btn primary" id="go">Generate speech</button>
+        <div class="note error" id="err" hidden role="alert"></div>
+      </div>
+    </main>
+
+    <aside>
+      <section class="card" aria-labelledby="h-out" aria-live="polite">
+        <h2 id="h-out">Output</h2>
+        <div id="out"><div class="empty">Generated audio will appear here.</div></div>
+      </section>
+      <section class="card" aria-labelledby="h-hist">
+        <h2 id="h-hist">History</h2>
+        <ul class="hist" id="hist"><li class="t">Nothing yet in this session.</li></ul>
+      </section>
+    </aside>
+  </div>
+
+  <footer>
+    <span>Built by <a href="https://huggingface.co/ghanaopenai" target="_blank" rel="noopener">Ghana Open AI</a> · Supported by <a href="https://ghananlp.org" target="_blank" rel="noopener">Ghana NLP</a></span>
+    <span>Model weights CC-BY-NC-4.0 · base model <a href="https://huggingface.co/meituan-longcat/LongCat-AudioDiT-1B" target="_blank" rel="noopener">LongCat-AudioDiT-1B</a> (MIT)</span>
+  </footer>
+</div>
+
+<script>
+const EXAMPLES = {
+  Asante_Twi_twi: ["Akwaaba! Wo ho te sɛn ɛnnɛ?", "Ɛnnɛ yɛbɛka nsɛm a ɛfa yɛn man Ghana ho.", "Me pɛ sɛ me kɔ Kumasi ɔkyena anɔpa."],
+  Akuapem_Twi_twi: ["Akwaaba, yɛda wo ase sɛ woaba.", "Nnipa nyinaa wɔ hokwan sɛ wɔde wɔn adwene ka."],
+  Fante_fat: ["Me ma wo akwaaba wɔ Cape Coast.", "Ɔdɔ na ɔma abusua yɛ dzen."],
+  Ewe_ewe: ["Woezɔ! Aleke nèfɔ ŋdi sia?", "Mia nɔviwo, egbe míaƒo nu tso míaƒe dukɔ ŋu."],
+  Dagbani_dag: ["Dagbani yɛltɔɣa nyɛla din be Ghana nudirigu ni."],
+  Hausa_hau: ["Barka da zuwa! Yaya kake yau?", "Mun gode da kuka saurare mu."],
+  English_eng: ["Good evening, and welcome to the news from Accra.", "Please remember to drink enough water during the hot season."],
+};
+const CODESWITCH = { Asante_Twi_twi: "Ɛnnɛ, Microsoft de Abilities for Jobs Program yi baeɛ, na ɛsɛ sɛ yɛn mmofra bɔ mmɔden fa so." };
+const MODE_DESC = {
+  noprompt: "The model chooses a voice on its own. Each new seed gives a different voice.",
+  speaker: "Uses the language's built-in speaker, a voice from the training data.",
+  prompt: "Clones the voice from your reference recording.",
+};
+const $ = (id) => document.getElementById(id);
+let API = "", MAXC = 600, mode = "noprompt", langs = [], lastSeed = null, refBlob = null, recorder = null, history = [];
+
+async function init() {
+  try { API = (await (await fetch("config.json", { cache: "no-store" })).json()).api.replace(/\/$/, ""); }
+  catch { API = ""; }
+  await health();
+  setInterval(health, 30000);
+  try { langs = await (await fetch(API + "/languages")).json(); } catch { langs = []; }
+  if (!langs.length) langs = Object.keys(EXAMPLES).map((k) => ({ key: k, name: k.split("_").slice(0, -1).join(" ") }));
+  for (const sel of [$("lang"), $("refLang")]) {
+    sel.innerHTML = langs.map((l) => `<option value="${l.key}">${l.name}</option>`).join("");
+    sel.value = "Asante_Twi_twi";
+  }
+  $("text").value = EXAMPLES.Asante_Twi_twi[0];
+  onLang(); count();
+}
+
+async function health() {
+  try {
+    const h = await (await fetch(API + "/health", { cache: "no-store" })).json();
+    MAXC = h.max_chars || MAXC;
+    setStatus(h.status === "ok", h.status === "ok" ? (h.queue ? `Online · ${h.queue} in queue` : "Online") : "Starting…");
+  } catch { setStatus(false, "Server offline"); }
+}
+function setStatus(ok, text) { $("dot").className = "dot " + (ok ? "ok" : "bad"); $("statusText").textContent = text; }
+
+function onLang() {
+  const k = $("lang").value, l = langs.find((x) => x.key === k) || {};
+  const ex = (EXAMPLES[k] || []).concat(CODESWITCH[k] ? [CODESWITCH[k]] : []);
+  if (!ex.length && l.speaker) ex.push(l.speaker.text);
+  $("examples").innerHTML = ex.map((t, i) => `<button type="button" class="chip" data-i="${i}" title="${esc(t)}">${esc(t)}</button>`).join("");
+  $("examples").querySelectorAll(".chip").forEach((b) => b.onclick = () => { $("text").value = ex[+b.dataset.i]; count(); });
+  $("refLang").value = k;
+  $("spkAudio").src = API + `/speakers/${k}.wav`;
+  $("spkInfo").innerHTML = l.speaker ? `<b>${esc(l.name)}</b> speaker · ${l.speaker.seconds.toFixed(1)} s<br><span class="mono">${esc(l.speaker.text)}</span>`
+                                     : "No built-in speaker information available.";
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === m));
+  document.querySelectorAll(".pane").forEach((p) => p.hidden = p.dataset.pane !== m);
+  $("modeDesc").textContent = MODE_DESC[m];
+}
+
+function count() {
+  const n = $("text").value.trim().length;
+  $("count").textContent = `${n} / ${MAXC}`;
+  $("count").classList.toggle("over", n > MAXC);
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function showErr(msg) { $("err").textContent = msg; $("err").hidden = !msg; }
+
+async function generate() {
+  const text = $("text").value.trim();
+  showErr("");
+  if (!text) return showErr("Please type some text.");
+  if (text.length > MAXC) return showErr(`Text is limited to ${MAXC} characters.`);
+  if (mode === "prompt" && !refBlob) return showErr("Upload or record a reference voice first.");
+  const fd = new FormData();
+  fd.append("text", text); fd.append("language", $("lang").value); fd.append("mode", mode);
+  fd.append("steps", $("steps").value); fd.append("cfg_strength", $("cfg").value); fd.append("speed", $("speed").value);
+  if (mode === "noprompt" && $("seed").value !== "") fd.append("seed", $("seed").value);
+  if (mode === "prompt") {
+    fd.append("prompt_audio", refBlob, refBlob.name || "reference.webm");
+    fd.append("prompt_text", $("refText").value.trim()); fd.append("prompt_language", $("refLang").value);
+  }
+  const btn = $("go"), t0 = performance.now();
+  btn.disabled = true;
+  const tick = setInterval(() => btn.innerHTML = `<span class="spin"></span>Generating… ${((performance.now() - t0) / 1000).toFixed(0)} s`, 250);
+  try {
+    const r = await fetch(API + "/synthesize", { method: "POST", body: fd });
+    if (!r.ok) { let d = ""; try { d = (await r.json()).detail; } catch {} throw new Error(d || `Server error (${r.status})`); }
+    const blob = await r.blob(), url = URL.createObjectURL(blob);
+    const dec = (h) => decodeURIComponent(r.headers.get(h) || "");
+    const item = { url, text, lang: $("lang").selectedOptions[0].text, mode, seed: r.headers.get("X-Seed"),
+                   dur: r.headers.get("X-Duration"), took: r.headers.get("X-Elapsed"),
+                   modelText: dec("X-Model-Text"), promptText: dec("X-Prompt-Text") };
+    lastSeed = item.seed; $("seedReuse").disabled = mode !== "noprompt";
+    render(item); history.unshift(item); renderHistory();
+  } catch (e) {
+    showErr(e.message === "Failed to fetch" ? "Could not reach the server. It may be offline; please try again later." : e.message);
+  } finally { clearInterval(tick); btn.disabled = false; btn.textContent = "Generate speech"; }
+}
+
+function render(it) {
+  const modeName = { noprompt: "No prompt", speaker: "Built-in speaker", prompt: "Your voice" }[it.mode];
+  $("out").innerHTML = `
+    <audio controls autoplay src="${it.url}"></audio>
+    <div class="row" style="margin-top:10px"><a class="btn small" href="${it.url}" download="ghana-audiodit.wav">Download WAV</a></div>
+    <dl class="meta">
+      <dt>Language</dt><dd>${esc(it.lang)}</dd>
+      <dt>Voice</dt><dd>${modeName}${it.mode === "noprompt" ? ` · seed <span class="mono">${esc(it.seed)}</span>` : ""}</dd>
+      <dt>Length</dt><dd>${(+it.dur).toFixed(1)} s audio · generated in ${(+it.took).toFixed(1)} s</dd>
+      ${it.promptText ? `<dt>Reference</dt><dd class="mono">${esc(it.promptText)}</dd>` : ""}
+      <dt>Model input</dt><dd class="mono">${esc(it.modelText)}</dd>
+    </dl>`;
+}
+
+function renderHistory() {
+  $("hist").innerHTML = history.slice(0, 8).map((h) =>
+    `<li><div class="t">${esc(h.lang)} · ${(+h.dur).toFixed(1)} s${h.mode === "noprompt" ? ` · seed ${esc(h.seed)}` : ""}</div>
+     <div style="font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.text)}</div>
+     <audio controls preload="none" src="${h.url}"></audio></li>`).join("");
+}
+
+function setRef(blob, name) {
+  refBlob = blob; refBlob.name = name;
+  $("refName").textContent = name;
+  $("refAudio").src = URL.createObjectURL(blob); $("refAudio").hidden = false;
+}
+
+async function toggleRecord() {
+  if (recorder && recorder.state === "recording") { recorder.stop(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      setRef(new Blob(chunks, { type: recorder.mimeType }), "recording." + (recorder.mimeType.includes("ogg") ? "ogg" : "webm"));
+      $("refRec").textContent = "● Record"; $("refRec").classList.remove("rec");
+    };
+    recorder.start();
+    $("refRec").textContent = "■ Stop"; $("refRec").classList.add("rec");
+    setTimeout(() => recorder && recorder.state === "recording" && recorder.stop(), 15000);
+  } catch { showErr("Microphone access was blocked."); }
+}
+
+document.querySelectorAll(".seg button").forEach((b) => b.onclick = () => setMode(b.dataset.mode));
+$("lang").onchange = onLang;
+$("text").oninput = count;
+$("go").onclick = generate;
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) generate(); });
+$("seedReuse").onclick = () => { if (lastSeed) $("seed").value = lastSeed; };
+$("refPick").onclick = () => $("refFile").click();
+$("refFile").onchange = (e) => { const f = e.target.files[0]; if (f) setRef(f, f.name); };
+$("refRec").onclick = toggleRecord;
+for (const [id, fmt] of [["steps", (v) => v], ["cfg", (v) => (+v).toFixed(1)], ["speed", (v) => (+v).toFixed(2) + "×"]])
+  $(id).oninput = () => $(id + "V").textContent = fmt($(id).value);
+setMode("noprompt");
+init();
+</script>
+</body>
+</html>
