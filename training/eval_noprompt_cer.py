@@ -7,7 +7,8 @@ omniASR CTC-300M (sherpa-onnx, CPU). Averaging over seeds removes most of the
 "which voice did this seed land on" noise of a single no-prompt sample.
 
     OMNIASR_SHERPA_DIR=... python training/eval_noprompt_cer.py --release <release dir> \
-        --val_manifest <workdir>/latents/val_universal.jsonl [--base meituan-longcat/LongCat-AudioDiT-1B]
+        --val_manifest <workdir>/latents/val_universal.jsonl [--base meituan-longcat/LongCat-AudioDiT-1B] \
+        [--ckpts <run>/step_0024000 <run>/step_0028000 ...]     # LoRA checkpoints, scored without merging
 """
 
 import argparse
@@ -24,6 +25,7 @@ from transformers import AutoTokenizer
 from cer_watch import build_eval_set, cer, norm, run_asr, to_univ
 from ghana_audiodit import GhanaTTS
 from ghana_audiodit.audiodit import AudioDiTModel
+from lora_utils import load_lora
 
 LANGS = ["Asante_Twi_twi", "Ewe_ewe", "Dagbani_dag"]
 
@@ -47,7 +49,7 @@ def score(tts: GhanaTTS, items, seeds, tag: str, tmp: Path) -> dict:
     nat = sum(a for a, _ in lang_avg.values()) / len(lang_avg)
     uni = sum(b for _, b in lang_avg.values()) / len(lang_avg)
     detail = "  ".join(f"{k.split('_')[0]} {b:.1f}" for k, (_, b) in sorted(lang_avg.items()))
-    print(f"{tag:10s} no-prompt CER  universal {uni:5.1f}  normal {nat:5.1f}   ({len(jobs)} clips; universal by language: {detail})",
+    print(f"{tag:12s} no-prompt CER  universal {uni:5.1f}  normal {nat:5.1f}   ({len(jobs)} clips; universal by language: {detail})",
           flush=True)
     return {"universal": uni, "normal": nat}
 
@@ -58,21 +60,32 @@ def main():
     ap.add_argument("--val_manifest", required=True)
     ap.add_argument("--base", default="meituan-longcat/LongCat-AudioDiT-1B")
     ap.add_argument("--seeds", type=int, default=3)
+    ap.add_argument("--ckpts", nargs="*", default=[], help="LoRA checkpoint dirs to score (base model + adapter)")
+    ap.add_argument("--skip_release", action="store_true")
     args = ap.parse_args()
     items = build_eval_set(args.val_manifest, 4, draw=4, langs=LANGS)
     seeds = list(range(args.seeds))
     tmp = Path(tempfile.mkdtemp())
 
-    if args.base:
-        base = AudioDiTModel.from_pretrained(args.base).to("cuda")
-        base.vae.to_half()
-        base.transformer.to(torch.bfloat16)
-        base.eval()
-        tts = GhanaTTS(base, AutoTokenizer.from_pretrained(base.config.text_encoder_model), Path(args.release))
-        score(tts, items, seeds, "base", tmp)
-        del tts, base
+    def wrap(ckpt=None) -> GhanaTTS:
+        m = AudioDiTModel.from_pretrained(args.base)
+        if ckpt:
+            load_lora(m, ckpt)
+            m.transformer = m.transformer.merge_and_unload()
+        m = m.to("cuda")
+        m.vae.to_half()
+        m.transformer.to(torch.bfloat16)
+        m.eval()
+        return GhanaTTS(m, AutoTokenizer.from_pretrained(m.config.text_encoder_model), Path(args.release))
+
+    if args.base and not args.ckpts:
+        score(wrap(), items, seeds, "base", tmp)
         torch.cuda.empty_cache()
-    score(GhanaTTS.from_pretrained(args.release), items, seeds, "release", tmp)
+    for c in args.ckpts:
+        score(wrap(c), items, seeds, Path(c).name.replace("step_000", "step_"), tmp)
+        torch.cuda.empty_cache()
+    if not args.skip_release:
+        score(GhanaTTS.from_pretrained(args.release), items, seeds, "release", tmp)
 
 
 if __name__ == "__main__":

@@ -127,7 +127,7 @@ To use the web demo with your endpoint, set its address in `space/config.json`.
 See [training/README.md](training/README.md). The released model: about 10 hours per language
 (407 hours) from [ghananlpcommunity/ghana-speech](https://huggingface.co/datasets/ghananlpcommunity/ghana-speech),
 LoRA rank 64 plus full training of the small layers, 85 % of examples without a voice prompt,
-20,000 steps at batch 64 on one H200.
+batch 64 on one H200; the released checkpoint is step 28,000 of a 40,000-step run.
 
 ## License
 

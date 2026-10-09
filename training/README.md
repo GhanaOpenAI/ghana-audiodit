@@ -88,7 +88,7 @@ also varies with which random voice a seed lands on.
 ## 6. Export
 
 ```bash
-python scripts/export_release.py --ckpt <run>/step_0020000 --train_manifest work/latents/train_universal.jsonl \
+python scripts/export_release.py --ckpt <run>/step_0028000 --train_manifest work/latents/train_universal.jsonl \
     --out release
 python scripts/make_card_samples.py --model release --val_manifest work/latents/val_universal.jsonl
 python scripts/build_model_card.py --release release

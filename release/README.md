@@ -180,12 +180,12 @@ The CER on normal spelling, without conversion, is shown for reference.
 | --- | --- | --- |
 | Real recordings (omniASR's own error rate on the human speech) | 19.8 % | 22.2 % |
 | LongCat-AudioDiT-1B (base) | 35.5 % | 43.3 % |
-| **This model** | **16.2 %** | **21.2 %** |
+| **This model** | **14.6 %** | **21.3 %** |
 
-By language (universal): Asante Twi 11.3 %, Ewe 18.5 %, Dagbani 18.8 %. The model's speech is
+By language (universal): Asante Twi 10.8 %, Dagbani 16.2 %, Ewe 16.8 %. The model's speech is
 at least as intelligible to omniASR as the real recordings. The set is small, so treat
 differences of a couple of points as noise. Flow-matching validation loss fell from 1.208 (base)
-to 0.940 without a prompt.
+to 0.933 without a prompt.
 
 ## Training
 
@@ -202,9 +202,10 @@ to 0.940 without a prompt.
   85 % of examples had no voice prompt, so no-prompt generation is trained directly; text and
   prompt were dropped together 10 % of the time for classifier-free guidance, built the same
   way as inference builds its unconditional input.
-- **Schedule:** AdamW (β 0.9/0.95), learning rate 1e-4 with 500 warm-up steps and cosine decay,
-  batch 64, one H200. This checkpoint is step 20,000 (about 6.9 epochs), chosen for the lowest
-  CER and validation loss.
+- **Schedule:** AdamW (β 0.9/0.95), learning rate 1e-4 with 500 warm-up steps and cosine decay
+  over 40,000 steps, batch 64, one H200. This checkpoint is **step 28,000** (about 9.6 epochs),
+  chosen for the lowest no-prompt CER among checkpoints scored every 4,000 steps. Later checkpoints
+  had slightly lower validation loss but were less intelligible (mainly in Ewe).
 
 ## Fine-tuning
 
