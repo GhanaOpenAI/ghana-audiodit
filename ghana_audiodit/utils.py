@@ -1,6 +1,15 @@
 import re
 import librosa
+import numpy as np
 import torch
+
+TARGET_RMS = 10 ** (-23 / 20)
+
+def normalize_loudness(audio: np.ndarray) -> np.ndarray:
+    rms = np.sqrt(np.mean(audio ** 2)) + 1e-9
+    audio = audio * (TARGET_RMS / rms)
+    peak = np.abs(audio).max()
+    return (audio / max(1.0, peak / 0.95)).astype(np.float32)
 
 def load_audio(wavpath, sr):
     audio, _ = librosa.load(wavpath, sr=sr, mono=True)

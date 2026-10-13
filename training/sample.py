@@ -40,6 +40,9 @@ def pick_pairs(val_manifest: str, langs: list[str] | None, seed: int = 0):
         clips = by_lang.get(lang, [])
         # prompt: 3–10 s clip; target: a different clip with a non-trivial text
         prompts = [c for c in clips if 35 <= c["frames"] <= 117]
+        if not prompts:
+            # fallback if all held-out clips are longer (e.g. 30s clips)
+            prompts = clips
         if not prompts or len(clips) < 2:
             continue
         p = rng.choice(prompts)
@@ -59,10 +62,18 @@ def synth(model, tokenizer, prompt_wav_path: str, prompt_text: str, gen_text: st
     max_frames = int(model.config.max_wav_duration * sr // hop)
 
     prompt_text, gen_text = normalize_text(prompt_text).strip(), normalize_text(gen_text).strip()
-    inputs = tokenizer([f"{prompt_text} {gen_text}"], padding="longest", return_tensors="pt")
     # prompts must get the same loudness normalisation as the training data
     prompt_wav = torch.from_numpy(normalize_loudness(load_audio(prompt_wav_path, sr)[0].numpy())).view(1, 1, -1)
 
+    # If prompt audio is longer than 8s, trim it so there is ample room for generation within max_frames
+    max_prompt_sec = 8.0
+    if prompt_wav.shape[-1] > int(max_prompt_sec * sr):
+        ratio = (max_prompt_sec * sr) / prompt_wav.shape[-1]
+        prompt_wav = prompt_wav[:, :, : int(max_prompt_sec * sr)]
+        char_cutoff = max(4, int(len(prompt_text) * ratio))
+        prompt_text = prompt_text[:char_cutoff].rsplit(" ", 1)[0]
+
+    inputs = tokenizer([f"{prompt_text} {gen_text}"], padding="longest", return_tensors="pt")
     _, prompt_frames = model.encode_prompt_audio(prompt_wav)
     # Duration from the prompt speaker's own character rate (language-agnostic).
     rate = prompt_frames / max(len(prompt_text.replace(" ", "")), 1)

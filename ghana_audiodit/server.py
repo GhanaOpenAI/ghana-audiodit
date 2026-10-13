@@ -29,9 +29,9 @@ import urllib.parse
 
 import numpy as np
 import soundfile as sf
-from fastapi import FastAPI, Form, HTTPException
+from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 
 from ghana_audiodit import LANGUAGES, GhanaTTS, resolve
 
@@ -75,10 +75,30 @@ def languages() -> list[dict]:
 
 
 
+@app.get("/voices")
+def get_voices() -> list[dict]:
+    tts = state["tts"]
+    if not tts:
+        return []
+    return tts.get_voices()
+
+
+@app.get("/voice-sample/{voice_id}")
+def get_voice_sample(voice_id: str):
+    tts = state["tts"]
+    if not tts or voice_id not in tts.voices:
+        raise HTTPException(404, "voice not found")
+    fpath = tts.voices[voice_id]["file_path"]
+    return FileResponse(str(fpath), media_type="audio/wav", filename=f"{voice_id}.wav")
+
+
 @app.post("/synthesize")
 async def synthesize(
     text: str = Form(...),
     language: str = Form("Asante_Twi_twi"),
+    voice: str | None = Form(None),
+    prompt_file: UploadFile | None = File(None),
+    prompt_text: str | None = Form(None),
     seed: int | None = Form(None),
     steps: int = Form(16),
     cfg_strength: float = Form(4.0),
@@ -98,6 +118,26 @@ async def synthesize(
         raise HTTPException(400, str(e))
     steps, cfg_strength, speed = int(np.clip(steps, 4, 32)), float(np.clip(cfg_strength, 1.0, 8.0)), float(np.clip(speed, 0.7, 1.4))
 
+    custom_prompt_audio = None
+    if prompt_file is not None:
+        try:
+            content = await prompt_file.read()
+            audio_np, in_sr = sf.read(io.BytesIO(content))
+            if audio_np.ndim > 1:
+                audio_np = audio_np.mean(axis=1)
+            import librosa
+            if in_sr != tts.sample_rate:
+                audio_np = librosa.resample(audio_np, orig_sr=in_sr, target_sr=tts.sample_rate)
+            import torch
+            from ghana_audiodit.utils import normalize_loudness
+            # clamp to max 10s
+            max_s = int(10.0 * tts.sample_rate)
+            if len(audio_np) > max_s:
+                audio_np = audio_np[:max_s]
+            custom_prompt_audio = torch.from_numpy(normalize_loudness(audio_np)).float().unsqueeze(0)
+        except Exception as e:
+            raise HTTPException(400, f"invalid prompt audio file: {e}")
+
     if state["waiting"] >= MAX_QUEUE:
         raise HTTPException(503, "busy, please retry in a moment")
     state["waiting"] += 1
@@ -105,8 +145,18 @@ async def synthesize(
         async with gpu_lock:
             t0 = time.time()
             try:
-                out = await asyncio.to_thread(tts.synthesize, text, language=language, seed=seed,
-                                              steps=steps, cfg_strength=cfg_strength, speed=speed)
+                out = await asyncio.to_thread(
+                    tts.synthesize,
+                    text,
+                    language=language,
+                    voice=voice,
+                    custom_prompt_audio=custom_prompt_audio,
+                    custom_prompt_text=prompt_text,
+                    seed=seed,
+                    steps=steps,
+                    cfg_strength=cfg_strength,
+                    speed=speed,
+                )
             except ValueError as e:
                 raise HTTPException(400, str(e))
             elapsed = time.time() - t0
@@ -117,5 +167,5 @@ async def synthesize(
     buf = io.BytesIO()
     sf.write(buf, out.audio, out.sample_rate, format="WAV", subtype="PCM_16")
     headers = {"X-Seed": str(out.seed), "X-Duration": f"{out.seconds:.2f}", "X-Elapsed": f"{elapsed:.2f}",
-               "X-Model-Text": hdr(" ".join(out.model_text)[:1500])}
-    return Response(buf.getvalue(), media_type="audio/wav", headers=headers)
+               "X-Model-Text": hdr("; ".join(out.model_text))}
+    return Response(content=buf.getvalue(), media_type="audio/wav", headers=headers)

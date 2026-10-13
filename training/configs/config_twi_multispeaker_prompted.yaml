@@ -1,0 +1,68 @@
+# LongCat-AudioDiT-1B — LoRA fine-tune on Twi Multi-Speaker Speech (ghanaopenai/twi-multispeaker-tts)
+# 100% voice-prompted training (p_no_prompt = 0.0) for in-context voice cloning and zero-shot continuation.
+# Transcripts in africa-g2p UNIVERSAL spelling with English skip.
+
+model:
+  model_dir: "meituan-longcat/LongCat-AudioDiT-1B"
+  dtype: "bfloat16"
+
+data:
+  train_manifest: "/mnt/volume_d2wey28/projects/longcat-audiodit-ghana/latents_twi_multispeaker/train_universal.jsonl"
+  val_manifest:   "/mnt/volume_d2wey28/projects/longcat-audiodit-ghana/latents_twi_multispeaker/val_universal.jsonl"
+  langs: [Asante_Twi_twi]
+  max_text_len: 512
+  min_audio_sec: 2.5
+  max_audio_sec: 30.5         # Full 30s clips without truncation
+  prompt_min_sec: 1.0         # Minimum prompt prefix
+  prompt_max_sec: 12.0        # Maximum prompt prefix (up to 12s)
+  min_gen_sec: 2.0            # Minimum continuation target length
+  prompt_frac_lo: 0.1         # Sample prompt between 10% and 50% of clip duration
+  prompt_frac_hi: 0.5
+  min_text_chars: 4
+  p_no_prompt: 0.0            # ALWAYS conditioned on prompt audio (zero-shot voice cloning)
+
+training:
+  output_dir: "/mnt/volume_d2wey28/projects/longcat-audiodit-ghana/checkpoints/lora_r64_twi_prompted"
+  init_from: "/mnt/volume_d2wey28/projects/longcat-audiodit-ghana/release/ghana-audiodit/lora"
+  resume_from: null
+  steps: 15000                # ~240 epochs at effective batch 64 on 3895 clips
+  batch_size: 8               # 8 per micro-batch fits comfortably with ~5.5 GB headroom
+  gradient_accumulation: 8    # Effective batch size 64
+  learning_rate: 5.0e-5       # Fine-tuning rate when continuing from released LoRA
+  betas: [0.9, 0.95]          # AudioDiT paper standard
+  weight_decay: 0.01
+  warmup_steps: 300
+  max_grad_norm: 1.0
+  p_uncond: 0.1               # Joint text+prompt drop for classifier-free guidance
+  log_every: 25
+  val_every: 250
+  save_every: 1000
+  keep_last_n: 5              # Keep latest 5 checkpoints
+  num_workers: 8
+  seed: 42
+
+lora:
+  r: 64
+  alpha: 64
+  dropout: 0.05
+
+# frozen | full | lora
+components:
+  dit_attn:             {mode: lora}
+  dit_ffn:              {mode: lora}
+  dit_adaln:            {mode: full}
+  text_embed:           {mode: full}
+  text_conv:            {mode: full}
+  latent_embed:         {mode: full}
+  latent_cond_embedder: {mode: full}
+  input_embed:          {mode: full}
+  output_proj:          {mode: full}
+  time_embed:           {mode: full}
+
+samples:
+  at_start: true              # Generate listening sample at step 0 for comparison
+  langs: [Asante_Twi_twi]
+  nfe: 16
+  cfg_strength: 4.0
+  guidance_method: apg
+  seed: 0
