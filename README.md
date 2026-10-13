@@ -48,22 +48,50 @@ Python 3.10+, PyTorch 2.1+. The model has **1.42 B parameters** (diffusion trans
 text encoder 282 M, Wav-VAE 156 M) and needs **~4 GB of GPU memory** (transformer in bfloat16, the
 default; `dtype="float32"` needs ~6 GB, use it on T4s). Any 6 GB+ GPU works; CPU works but is slow.
 
+## Models
+
+1. **[ghanaopenai/ghana-audiodit](https://huggingface.co/ghanaopenai/ghana-audiodit)** — Text-to-speech for 43 Ghanaian languages. Speaks with random seed-based voices.
+2. **[ghanaopenai/twi-multispeaker-audiodit](https://huggingface.co/ghanaopenai/twi-multispeaker-audiodit)** — Multi-speaker Twi TTS with **zero-shot voice cloning** and packaged preset voices (`bright_low`, `deep_excited`, `deep_calm`, `warm_storyteller`, `lively_host`, `bright_clear`), fine-tuned on [ghanaopenai/twi-multispeaker-tts](https://huggingface.co/datasets/ghanaopenai/twi-multispeaker-tts).
+
 ## Use
+
+### 1. Multi-Speaker Twi with Voice Cloning & Presets
 
 ```python
 from ghana_audiodit import GhanaTTS
 
-tts = GhanaTTS.from_pretrained()                       # ghanaopenai/ghana-audiodit
+# Load the Twi multi-speaker prompted model
+tts = GhanaTTS.from_pretrained("ghanaopenai/twi-multispeaker-audiodit")
 
-out = tts.synthesize("Akwaaba! Wo ho te sɛn ɛnnɛ?", language="Asante_Twi_twi")
+# Synthesize using a packaged preset voice ('bright_low', 'deep_excited', 'deep_calm', etc.)
+out = tts.synthesize("Akwaaba! Wo ho te sɛn ɛnnɛ?", voice="bright_low")
+out.save("twi_bright.wav")
+
+# Or zero-shot clone any reference voice audio (3–6 seconds):
+import torch
+from ghana_audiodit.utils import load_audio
+ref_wav = load_audio("path/to/my_voice.wav", sr=24000)
+
+out_clone = tts.synthesize(
+    "Dɔketa no maa ɔyarefoɔ no aduro wɔ asopiti hɔ.",
+    custom_prompt_audio=ref_wav,
+    custom_prompt_text="Prompt speaker speech transcript here."  # optional, auto-transcribes if omitted
+)
+out_clone.save("cloned_twi.wav")
+```
+
+### 2. 43-Language Base Model
+
+```python
+from ghana_audiodit import GhanaTTS
+
+tts = GhanaTTS.from_pretrained("ghanaopenai/ghana-audiodit")
+
+out = tts.synthesize("Akwaaba! Wo ho te sɛn ɛnnɛ?", language="Asante_Twi_twi", seed=42)
 out.save("twi.wav")
-print(out.seed)                         # the voice used; pass seed=... to get it again
 
 tts.synthesize("Woezɔ! Aleke nèfɔ ŋdi sia?", language="Ewe", seed=42).save("ewe.wav")
 ```
-
-> **No voice cloning.** The model was trained mostly without voice prompts (85 % of examples), and
-> prompted generation was not reliable enough to ship. The voice comes from the seed.
 
 Write in the normal spelling of the language, English words included. The package converts text
 to the [africa-g2p](https://github.com/AfriSpeech/africa-g2p) universal spelling the model was

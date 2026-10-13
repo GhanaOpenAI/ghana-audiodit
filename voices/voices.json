@@ -1,0 +1,56 @@
+[
+  {
+    "id": "bright_low",
+    "display_name": "Bright Low",
+    "description": "Rich, grounded alto voice with natural resonance",
+    "pitch_hz": 213.4,
+    "file": "bright_low.wav",
+    "prompt_text": "Na ɛbaa sɛ nna a wɔrebɛfa no akɔ soro reyɛ awie duru no, ɔde sii n’ani sɛ ɔrekɔ Yerusalem.",
+    "prompt_text_universal": "na ebaa se nna a worebefa no ako osoro reye awie duru no, ode sii nani se oreko yerusalem."
+  },
+  {
+    "id": "deep_excited",
+    "display_name": "Deep Excited",
+    "description": "Rich, dynamic baritone with energetic delivery",
+    "pitch_hz": 114.4,
+    "file": "deep_excited.wav",
+    "prompt_text": "No, ɛkyerɛ no sɛ prostate no, sɛdeɛ Nyame ahyɛhyɛ no no, ɔse sɛ cells no multiply, na ɛmultiply dubaabi a, ɔse sɛ ɔmo gyae na ebi wu na foforɔ bɛka ho.",
+    "prompt_text_universal": "no, echere no se prostate no, sedie nyame asheshe no no, ose se cells no multiply, na emultiply dubaabi a, ose se omo jae na ebi wu na foforo beka ho."
+  },
+  {
+    "id": "deep_calm",
+    "display_name": "Deep Calm",
+    "description": "Deep, authoritative baritone voice with calm cadence",
+    "pitch_hz": 115.0,
+    "file": "deep_calm.wav",
+    "prompt_text": "Na wowie yeinom a, sane da wo mfe nifa so soa Yuda fie amumuyɛ adaduanan; mede afe baako biara mayɛ wo da koro.",
+    "prompt_text_universal": "na wowie yeinom a, sane da wo mfe nifa so soa yuda fie amumuye adaduanan; mede afe baako biara maye wo da koro."
+  },
+  {
+    "id": "warm_storyteller",
+    "display_name": "Warm Storyteller",
+    "description": "Warm narrative timbre with clear, expressive pacing",
+    "pitch_hz": 173.7,
+    "file": "warm_storyteller.wav",
+    "prompt_text": "Mfuturo mu na w’asɛm bɛfiri ayɛ huhuhuhu; wo nne bɛyɛ sɛ ɔsaman deɛ afiri fam.",
+    "prompt_text_universal": "mfuturo mu na wasem befiri aye huhuhuhu; wo nne beye se osaman die afi fam."
+  },
+  {
+    "id": "lively_host",
+    "display_name": "Lively Host",
+    "description": "Upbeat, energetic broadcast host with vibrant cadence",
+    "pitch_hz": 204.7,
+    "file": "lively_host.wav",
+    "prompt_text": "Na afei, hwɛ, merekɔ me man mu: bra na menkasa menkyerɛ wo deɛ ɔman yi bɛyɛ wo man nna a ɛdi akyire no mu.",
+    "prompt_text_universal": "na afei, hwe, mereko me man mu: bra na menkasa menchere wo die oman yi beye wo man nna a edi akyire no mu."
+  },
+  {
+    "id": "bright_clear",
+    "display_name": "Bright Clear",
+    "description": "Crisp, bright feminine tone with articulate clarity",
+    "pitch_hz": 193.9,
+    "file": "bright_clear.wav",
+    "prompt_text": "Mede mo asɔfodie no mama mo sɛ akyɛdeɛ som adwuma; na obi foforɔ biara a ɔbɛbɛpɛn ho no, wɔnku no.",
+    "prompt_text_universal": "mede mo asofodie no mama mo se achedie som ajuma; na obi foforo biara a obebepene ho no, wonku no."
+  }
+]

@@ -141,11 +141,7 @@ class GhanaTTS:
             cfg_strength=cfg_strength,
             guidance_method=guidance_method,
         )
-        wav = out.waveform.squeeze().float().cpu().numpy()
-        prompt_samples = int(prompt_frames * self.hop)
-        if len(wav) > prompt_samples:
-            wav = wav[prompt_samples:]
-        return wav
+        return out.waveform.squeeze().float().cpu().numpy()
 
     def synthesize(
         self,
@@ -180,8 +176,32 @@ class GhanaTTS:
         prompt_wav = None
         prompt_text = ""
         if custom_prompt_audio is not None:
-            prompt_wav = custom_prompt_audio
-            prompt_text = custom_prompt_text or ""
+            if custom_prompt_audio.ndim == 2:
+                custom_prompt_audio = custom_prompt_audio.unsqueeze(0)
+            prompt_np = custom_prompt_audio.squeeze().cpu().numpy()
+            prompt_wav = torch.from_numpy(normalize_loudness(prompt_np)).view(1, 1, -1)
+            if prompt_wav.shape[-1] > int(7.0 * self.sample_rate):
+                prompt_wav = prompt_wav[:, :, : int(7.0 * self.sample_rate)]
+
+            if not custom_prompt_text:
+                try:
+                    import sherpa_onnx
+                    asr_dir = os.environ.get("OMNIASR_SHERPA_DIR", "/mnt/volume_d2wey28/models/sherpa/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-2025-11-12")
+                    if os.path.exists(f"{asr_dir}/model.onnx"):
+                        rec = sherpa_onnx.OfflineRecognizer.from_omnilingual_asr_ctc(
+                            model=f"{asr_dir}/model.onnx",
+                            tokens=f"{asr_dir}/tokens.txt",
+                            num_threads=2,
+                            decoding_method="greedy_search"
+                        )
+                        st = rec.create_stream()
+                        st.accept_waveform(self.sample_rate, prompt_np[: int(7.0 * self.sample_rate)])
+                        rec.decode_stream(st)
+                        prompt_text = prepare((st.result.text or "").strip(), language)
+                except Exception:
+                    prompt_text = ""
+            else:
+                prompt_text = prepare(custom_prompt_text, language)
         elif voice and voice in self.voices:
             prompt_wav = self.voices[voice]["prompt_wav"]
             prompt_text = self.voices[voice]["prompt_text"]

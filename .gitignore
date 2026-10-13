@@ -4,5 +4,6 @@ __pycache__/
 .venv/
 *.wav
 !space/*.wav
+!voices/*.wav
 server.log
 tunnel.log
